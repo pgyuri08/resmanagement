@@ -100,4 +100,14 @@ router.get('/skills/queries', async (req,res) => {
   }
 });
 
+router.get('/skills/queries/resources', async (req,res) => {
+  try{
+    const posts = await Resource.find({"type":"job_description"}).populate({ path: 'skills', populate: { path: 'queries', populate: { path: 'resources' } } })
+    console.log(posts[0])
+    res.json(posts)
+  }catch(err){
+    res.json({message:err })
+  }
+});
+
 module.exports = router;
