@@ -53,14 +53,14 @@ function fetchRoles() {
 }
 
 
-function fetchQueries(skillID) {
+const fetchQueries = skillID => {
   fetch('http://localhost:9000/skills/queries')
     .then((res) => res.json())
     .then((data) => {
       let queries = '';
-      data[0].skills.forEach(function (skill) {
+      data[0].skills.forEach((skill) => {
         if (skill._id == skillID) {
-          skill.queries.forEach(function (query) {
+          skill.queries.forEach((query) => {
             queries += `
                           <ul id="queries-${query._id}">
                             <li><b>Name: ${query.query}</b></li>
@@ -85,12 +85,12 @@ function fetchQueries(skillID) {
 
       let skillProp = document.querySelector('#skill-' + skillID)
       skillProp.appendChild(queryClsBtn)
-      document.querySelector('.queriesBtn').disabled = true;
+      skillProp.querySelectorAll('.queriesBtn').forEach(elm => elm.disabled = true)
       queryClsBtn.addEventListener("click", function () {
         let skill = document.getElementById('skill-' + skillID)
         let skills_nested = document.querySelector('.ul-skill' + skillID)
         skill.removeChild(skills_nested)
-        document.querySelector('.queriesBtn').disabled = false;
+        skill.querySelectorAll('.queriesBtn').forEach(elm => elm.disabled = false)
         let queryClsbtn_nested = document.querySelector('.queryClsBtn' + skillID)
         skill.removeChild(queryClsbtn_nested)
       })
@@ -98,28 +98,32 @@ function fetchQueries(skillID) {
     })
 }
 
-function fetchResources(sid, did) {
+ const fetchResources = (sid, did) => {
   fetch('http://localhost:9000/skills/queries/resources')
     .then((res) => res.json())
     .then((data) => {
       let resources = '';
-      data[0].skills.forEach(function (skill) {
+      data[0].skills.forEach(skill => {
         if (skill._id == sid) {
-          skill.queries.forEach(function (query) {
+          skill.queries.forEach(query => {
             if (query._id == did) {
-              query.resources.forEach(function (resource) {
+              query.resources.forEach(resource => {
                   resources += `
                   <ul id="resources-${resource._id}">
-                    <li><b>${resource.title}</b></li>
-                    <input class="question_input" type="text" size="200" value="${resource.summary}"/>
-                  </ul>  
-                  `
+                  <li><b>${resource.title}</b><button>Add</button></li>`
+                  
+                  resource.summary.map( (value, i) => {
+                    resources += `<input id="question-${resource._id}-${i}" class="question_input" type="text" size="100%" value="${value}"/>
+                    <input id="checkbox-${resource._id}-${i}" type="checkbox" onclick="hideQuestion(${resource._id}, ${i})">`
+                  })
+
+                  resources += `</ul>`
                 })
             }
           })
         }
-
       })
+
       let main = document.querySelector('#queries-' + did)
       let ul3 = document.createElement('ul')
       ul3.classList.add('ul-resource' + did)
@@ -132,14 +136,18 @@ function fetchResources(sid, did) {
 
       let y = document.querySelector('#queries-' + did)
       y.appendChild(x)
-      document.querySelector('.resourcesBtn').disabled = true;
+      y.querySelectorAll('.resourcesBtn').forEach(elm => elm.disabled = true)
       x.addEventListener("click", function () {
         let d = document.getElementById('queries-' + did)
         let d_nested = document.querySelector('.ul-resource' + did)
         d.removeChild(d_nested)
-        document.querySelector('.queriesBtn').disabled = false;
+        d.querySelectorAll('.resourcesBtn').forEach(elm => elm.disabled = false);
         let btn_nested = document.querySelector('.closeBtn' + did)
         d.removeChild(btn_nested)
       })
     })
+}
+
+const hideQuestion = (resId, index) => {
+  console.log(resId, index)
 }
