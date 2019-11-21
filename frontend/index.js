@@ -8,6 +8,8 @@ fetch('http://localhost:9000/job_descriptions')
                 <li>${post.name}</li>
                 <li>${post.description}</li>
                 <button class="skillsBtn" name="skills" onclick="fetchRoles(${post._id})">Skills</button>
+                <button style="float:right" onclick="findModifiedFields()">Save</button>
+                <button style="float:right">Delete</button>
             </div>  
           `
     })
@@ -110,11 +112,11 @@ const fetchQueries = skillID => {
               query.resources.forEach(resource => {
                   resources += `
                   <ul id="resources-${resource._id}">
-                  <li><b>${resource.title}</b><button>Add</button></li>`
+                  <li><b>${resource.title}</b><button style="margin-left:10px" >Add</button></li>`
                   
                   resource.summary.map( (value, i) => {
-                    resources += `<input id="question-${resource._id}-${i}" class="question_input" type="text" size="100%" value="${value}"/>
-                    <input id="checkbox-${resource._id}-${i}" type="checkbox" onclick="hideQuestion(${resource._id}, ${i})">`
+                    resources += `<input id="question-${resource._id}-${i}" class="question_input" type="text" size="100%" value="${value}" onclick="selectCheckBox(${resource._id}, ${i})"/>
+                    <input class="checkbox" id="checkbox-${resource._id}-${i}" ref="question-${resource._id}-${i}" type="checkbox">`
                   })
 
                   resources += `</ul>`
@@ -148,6 +150,14 @@ const fetchQueries = skillID => {
     })
 }
 
-const hideQuestion = (resId, index) => {
-  console.log(resId, index)
+const selectCheckBox = (resId, index) => {
+  let y = document.querySelector("#checkbox-" + resId + "-" + index).checked = true;
+}
+
+const findModifiedFields = () => {
+  let checkbox = document.querySelectorAll('.checkbox:checked')
+  console.log(checkbox)
+  let id = checkbox.body(ref)
+  console.log(id)
+
 }
