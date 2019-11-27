@@ -9,7 +9,7 @@ fetch('http://localhost:9000/job_descriptions')
                 <li>${post.description}</li>
                 <button class="skillsBtn" name="skills" onclick="fetchRoles(${post._id})">Skills</button>
                 <button style="float:right" onclick="findModifiedFields()">Save</button>
-                <button style="float:right">Delete</button>
+                <button style="float:right" onclick="deleteFields()">Delete</button>
             </div>  
           `
     })
@@ -104,15 +104,17 @@ const fetchQueries = skillID => {
   fetch('http://localhost:9000/skills/queries/resources')
     .then((res) => res.json())
     .then((data) => {
+      let questionId = '';
       let resources = '';
       data[0].skills.forEach(skill => {
         if (skill._id == sid) {
           skill.queries.forEach(query => {
             if (query._id == did) {
               query.resources.forEach(resource => {
+                questionId = resource.summary.length
                   resources += `
                   <ul id="resources-${resource._id}">
-                  <li><b>${resource.title}</b><button style="margin-left:10px" >Add</button></li>`
+                  <li><b>${resource.title}</b><button id="addBtn-${resource._id}" style="margin-left:10px" onclick="addElement(${resource._id}, ${questionId})">Add</button></li>`
                   
                   resource.summary.map( (value, i) => {
                     resources += `<input id="question-${resource._id}-${i}" class="question_input" type="text" size="100%" value="${value}" onclick="selectCheckBox(${resource._id}, ${i})"/>
@@ -155,9 +157,86 @@ const selectCheckBox = (resId, index) => {
 }
 
 const findModifiedFields = () => {
-  let checkbox = document.querySelectorAll('.checkbox:checked')
-  console.log(checkbox)
-  let id = checkbox.body(ref)
-  console.log(id)
+  let id = ''
+  let val = ''
+  let questions = []
+  let checkbox = document.querySelectorAll('.checkbox:checked').forEach(ck => {
+    id = ck.getAttribute('ref')
+    let refs = id.split('-')
+    val = document.getElementById(id).value
+    // console.log(id, val, document.getElementById(id))
+    questions.push({ 
+      refsId:refs[1],
+      qId:refs[2],
+      value:val
+     })
+  })
+  ck.checked = false
+    return fetch('http://localhost:9000/skills/queries/resources', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(questions)
+    }).then(response => {
+      response.json().then(json => {
+        return json;
+      }).then(json => {
+        document.querySelectorAll('.checkbox:checked').forEach(ck => ck.checked = false)
+        // console.log(json)
+      })
+    });
+  // console.log(questions)
+}
+
+const deleteFields = () => {
+  let questions = []
+  let checkbox = document.querySelectorAll('.checkbox:checked').forEach(ck => {
+    id = ck.getAttribute('ref')
+    let refs = id.split('-')
+    val = document.getElementById(id).value
+    questions.push({
+      refsId: refs[1],
+      qId: refs[2],
+      value:val
+    })
+  })
+  console.log(questions)
+  return fetch('http://localhost:9000/delete', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(questions)
+  }).then(response => {
+    response.json().then(json => {
+      return json;
+    }).then(json => {
+      document.querySelectorAll('.checkbox:checked').forEach(ck => ck.checked = false)
+    })
+  })
+}
+
+const addElement = (id, questionId) => {
+  let resourceContainer = document.getElementById('resources-' + id)
+
+  let newInput = document.createElement('input')
+  newInput.setAttribute("id",`question-${id}-${questionId}`)
+  newInput.classList.add('question_input')
+  newInput.setAttribute("type","text")
+  newInput.setAttribute("size","100%")
+  newInput.setAttribute("placeholder","Insert your question here")
+  newInput.setAttribute("onclick",`selectCheckBox(${id},${questionId})`)
+
+  let relatedCheckbox = document.createElement('input')
+  relatedCheckbox.classList.add('checkbox')
+  relatedCheckbox.setAttribute("id",`checkbox-${id}-${questionId}`)
+  relatedCheckbox.setAttribute("ref",`question-${id}-${questionId}`)
+  relatedCheckbox.setAttribute("type","checkbox")
+  relatedCheckbox.setAttribute("checked","true")
+  relatedCheckbox.setAttribute("style","margin-left:7px")
+
+  resourceContainer.appendChild(newInput)
+  resourceContainer.appendChild(relatedCheckbox)
 
 }

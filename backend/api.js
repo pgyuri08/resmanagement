@@ -9,16 +9,6 @@ let array = [];
 
 router.use(cors())
 
-// router.get('/job_description', async (req,res) => {
-//   try{
-//     const posts = await Resource.find({"type":"job_description"})
-//     console.log(posts[0])
-//     res.json(posts)
-//   }catch(err){
-//     res.json({message:err })
-//   }
-// });
-
 let getResource = async (id) => {
   let data
   // console.log(id)
@@ -43,37 +33,6 @@ router.get('/resources', async (req, res) => {
 router.get('/job_descriptions', async (req,res) => {
   try{
     const posts = await Resource.find({"type":"job_description"})
-      // .populate({
-      //   path: 'roles', populate: {
-      //     path: 'skills', populate: {
-      //       path: 'queries', populate: {
-      //         path: 'resources'
-      //       }
-      //     }
-      //   } 
-      // })
-      // .populate({
-      //   path: 'skills', populate: {
-      //     path: 'queries', populate: {
-      //       path: 'resources'
-      //     }
-      //   }
-      // })
-      // .populate({
-      //   path: 'queries', populate: {
-      //     path: 'resources'
-      //   }
-      // })
-      // .populate({ path: 'roles' }).populate({ path: 'queries' })
-              //   .populate({ path: 'roles',
-              //   populate: [
-              //     { path:'queries',
-              //     populate:[
-              //       { path:'resources' }
-              //     ],
-              //     }]
-              // })
-    console.log(posts[0])
     res.json(posts)
   }catch(err){
     res.json({message:err })
@@ -83,7 +42,7 @@ router.get('/job_descriptions', async (req,res) => {
 router.get('/skills', async (req,res) => {
   try{
     const posts = await Resource.find({"type":"job_description"}).populate('skills')
-    console.log(posts[0])
+    // console.log(posts[0])
     res.json(posts)
   }catch(err){
     res.json({message:err })
@@ -93,7 +52,7 @@ router.get('/skills', async (req,res) => {
 router.get('/skills/queries', async (req,res) => {
   try{
     const posts = await Resource.find({"type":"job_description"}).populate({ path:'skills', populate: {path: 'queries'} })
-    console.log(posts[0])
+    // console.log(posts[0])
     res.json(posts)
   }catch(err){
     res.json({message:err })
@@ -103,11 +62,61 @@ router.get('/skills/queries', async (req,res) => {
 router.get('/skills/queries/resources', async (req,res) => {
   try{
     const posts = await Resource.find({"type":"job_description"}).populate({ path: 'skills', populate: { path: 'queries', populate: { path: 'resources' } } })
-    console.log(posts[0])
     res.json(posts)
   }catch(err){
     res.json({message:err })
   }
 });
+
+router.put('/skills/queries/resources?:postId', async (req, res) => {
+  let questions = req.body
+  let id_array = []
+  questions.map(o => id_array.indexOf(o.refsId) < 0 ? id_array.push(o.refsId) : false)
+  let data = id_array.map(rid => ({
+    refId: rid,
+    q: questions.filter(o => o.refsId === rid)
+  }))
+  console.dir(data)
+
+  let errors = []
+  data.map(async resource => {
+    let res_id = resource.refId;
+
+    await getResource(res_id).then(async resBody => {
+      resource.q.map(question => resBody.summary[question.qId] = question.value)
+      console.log(resBody.summary)
+
+      try {
+        const updatePost = await Resource.findByIdAndUpdate({ _id: res_id }, { summary: resBody.summary })
+      } catch (err) {
+        errors.push(err)
+      }
+    })
+  })
+  if(errors.length) {
+    console.log(errors)
+    res.json({ message: "Server error",err:errors})
+  } else {
+    res.json({ message: "Update Sucessful"})
+  }
+});
+
+router.put('/delete', async (req, res) => {
+  let questions = req.body
+  for (i = 0; i < questions.length; i++) {
+    console.log(questions[i].refsId, questions[i].qId, questions[i].value)
+    try {
+      const removedPost = await Resource.updateMany(
+        { '_id': questions[i].refsId },
+        { $pull: { summary: questions[i].value } }, { multi: false })
+      res.json(removedPost);
+      console.log(removedPost)
+    } catch (err) {
+      res.json({ message: err });
+    }
+  }
+});
+
+
 
 module.exports = router;
