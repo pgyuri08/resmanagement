@@ -1,5 +1,6 @@
 const express = require('express');
 var cors = require('cors');
+const fs = require('fs')
 
 const mongoose = require('mongoose');
 const Resource = require('../model/schema');
@@ -114,6 +115,74 @@ router.put('/delete', async (req, res) => {
     } catch (err) {
       res.json({ message: err });
     }
+  }
+});
+
+router.get('/roles', async (req,res) => {
+  try{
+    const posts = await Resource.find({"type":"role"})
+    res.json(posts)
+  }catch(err){
+    res.json({message:err })
+  }
+});
+
+router.get('/roles/skills', async (req,res) => {
+  try{
+    const posts = await Resource.find({"type":"role"}).populate('skills')
+    res.json(posts)
+  }catch(err){
+    res.json({message:err })
+  }
+});
+
+router.get('/all-content', async (req, res) => {
+  try{
+    const posts = await Resource.find({"type":"job_description"})
+      .populate({
+        path: 'roles', populate: {
+          path: 'skills queries', populate: {
+            path: 'queries resources', populate: {
+              path: 'resources'
+            }
+          }
+        } 
+      })
+      .populate({
+        path: 'skills', populate: {
+          path: 'queries', populate: {
+            path: 'resources'
+          }
+        }
+      })
+      .populate({
+        path: 'queries', populate: {
+          path: 'resources'
+        }
+      })
+      // .populate({ path: 'roles' }).populate({ path: 'queries' })
+      //           .populate({ path: 'roles',
+      //           populate: [
+      //             { path:'queries',
+      //             populate:[
+      //               { path:'resources' }
+      //             ],
+      //             }]
+      //         })
+              
+    console.log(posts[0])
+    res.json(posts)
+    const jsonString = JSON.stringify(posts)
+    console.log(jsonString)
+    fs.writeFile('./jobdescription.json', jsonString, err => {
+      if (err) {
+        console.log('Error writing file', err)
+      } else {
+        console.log('Successfuly wrote file')
+      }
+    })
+  }catch(err){
+    res.json({message:err })
   }
 });
 

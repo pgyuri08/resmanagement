@@ -4,19 +4,25 @@ fetch('http://localhost:9000/job_descriptions')
     let output = '';
     data.forEach(function (post) {
       output += `
-            <div>
+            <div class="mainBtns">    
+              <button style="float:right" onclick="findModifiedFields()">Save</button>
+              <button style="float:right" onclick="deleteFields()">Delete</button>
+              <button style="float:right" onclick="getAllContent()">Export to JSON</button>
+            </div>  
+            <div id="skillsColl" class=""skillsColl">
                 <li>${post.name}</li>
                 <li>${post.description}</li>
-                <button class="skillsBtn" name="skills" onclick="fetchRoles(${post._id})">Skills</button>
-                <button style="float:right" onclick="findModifiedFields()">Save</button>
-                <button style="float:right" onclick="deleteFields()">Delete</button>
+                <button class="skillsBtn" name="skills" onclick="fetchSkills(${post._id})">Skills</button>
+            </div>
+            <div id="rolesColl" class="rolesColl">
+              <button class="rolesBtn" name="roles" onclick="fetchRoles()">Roles</button>
             </div>  
           `
     })
     document.getElementById('output').innerHTML = output
   })
 
-function fetchRoles() {
+function fetchSkills() {
   fetch('http://localhost:9000/skills')
     .then((res) => res.json())
     .then((data) => {
@@ -32,28 +38,27 @@ function fetchRoles() {
             `
       })
 
-      let mainOutput = document.getElementById('output')
+      let mainOutput = document.getElementById('skillsColl')
       let skillList = document.createElement('ul')
       skillList.classList.add('skills-list')
       skillList.innerHTML = list
       mainOutput.appendChild(skillList)
 
       let rolesCloseBtn = document.createElement('button')
-      rolesCloseBtn.classList.add('rolesCloseBtn')
+      rolesCloseBtn.classList.add('skillCloseBtn')
       rolesCloseBtn.innerHTML = "close"
       mainOutput.appendChild(rolesCloseBtn)
       document.querySelector('.skillsBtn').disabled = true;
       rolesCloseBtn.addEventListener("click", function () {
-        let mOutpout = document.getElementById('output')
+        let mOutpout = document.getElementById('skillsColl')
         let skills_nested = document.querySelector('.skills-list')
         mOutpout.removeChild(skills_nested)
         document.querySelector('.skillsBtn').disabled = false;
-        let skillsCloseBtn_nested = document.querySelector('.rolesCloseBtn')
+        let skillsCloseBtn_nested = document.querySelector('.skillCloseBtn')
         mOutpout.removeChild(skillsCloseBtn_nested)
       })
     })
 }
-
 
 const fetchQueries = skillID => {
   fetch('http://localhost:9000/skills/queries')
@@ -171,7 +176,7 @@ const findModifiedFields = () => {
       value:val
      })
   })
-  ck.checked = false
+  // ck.checked = false
     return fetch('http://localhost:9000/skills/queries/resources', {
       method: 'PUT',
       headers: {
@@ -240,3 +245,101 @@ const addElement = (id, questionId) => {
   resourceContainer.appendChild(relatedCheckbox)
 
 }
+
+const fetchRoles = () => {
+  fetch('http://localhost:9000/roles')
+  .then((res) => res.json())
+  .then((data) => {
+    let roles = '';
+    data.forEach(function (role) {
+      roles += `
+                <ul id="roles-${role._id}">
+                  <li><b>Description: ${role.description}</b></li>
+                  <li>Name: ${role.name}</li>
+                  <li>Type: ${role.type}</li>
+                  <button class="rolesSkillBtn" name="rolesSkill" onclick="fetchRolesSkills(${role._id})">Skills</button>
+                </ul>  
+          `
+    })
+
+    let mainOutput = document.getElementById('output')
+    let roleList = document.createElement('ul')
+    roleList.classList.add('role-list')
+    roleList.innerHTML = roles
+    mainOutput.appendChild(roleList)
+
+    let rolesCloseBtn = document.createElement('button')
+    rolesCloseBtn.classList.add('rolesCloseBtn')
+    rolesCloseBtn.innerHTML = "close"
+    mainOutput.appendChild(rolesCloseBtn)
+    document.querySelector('.rolesBtn').disabled = true;
+    rolesCloseBtn.addEventListener("click", function () {
+      let mOutpout = document.getElementById('output')
+      let roles_nested = document.querySelector('.role-list')
+      mOutpout.removeChild(roles_nested)
+      document.querySelector('.rolesBtn').disabled = false;
+      let rolesCloseBtn_nested = document.querySelector('.rolesCloseBtn')
+      mOutpout.removeChild(rolesCloseBtn_nested)
+    })
+  })
+}
+
+const fetchRolesSkills = (roleId) => {
+  fetch('http://localhost:9000/roles/skills')
+    .then((res) => res.json())
+    .then((data) => {
+      let rolesSkill = '';
+      let i = ''; //declared the amount of elements that it has to remember how many times it has to loop through
+      for (i = 0; i < data.length; i++) { //loop through all the elements stored in the data array
+        if (data[i]._id === roleId) { //when you click on the button it deals with the that role where the ids matching
+          let leng = data[i].skills.length //hen checks the length of that role's skills
+          for (a = 0; a < leng; a++) { //then it loops through on all the skills
+
+            skillId = data[i].skills[a]._id
+            skillName = data[i].skills[a].name
+            skillDesc = data[i].skills[a].description
+            skillType = data[i].skills[a].type
+
+            rolesSkill += `
+              <ul id="rolesSkill-${skillId}">
+                <li><b>Description: ${skillDesc}</b></li>
+                <li>Name: ${skillName}</li>
+                <li>Type: ${skillType}</li>
+              </ul>  
+        `
+
+          }
+        }
+
+      }
+      let mainOutput = document.getElementById('roles-' + roleId)
+      let roleList = document.createElement('ul')
+      roleList.classList.add('role-skill-list-' + roleId)
+      roleList.innerHTML = rolesSkill
+      mainOutput.appendChild(roleList)
+
+      let rolesSkillCloseBtn = document.createElement('button')
+      rolesSkillCloseBtn.classList.add('rolesSkillCloseBtn' + roleId)
+      rolesSkillCloseBtn.innerHTML = "close"
+
+      mainOutput.appendChild(rolesSkillCloseBtn)
+      mainOutput.querySelectorAll('.rolesSkillBtn').forEach(elm => elm.disabled = true)
+      rolesSkillCloseBtn.addEventListener("click", function () {
+        let mOutpout = document.getElementById('roles-' + roleId)
+        let roles_skill_nested = document.querySelector('.role-skill-list-' + roleId)
+        mOutpout.removeChild(roles_skill_nested)
+        mOutpout.querySelectorAll('.rolesSkillBtn').forEach(elm => elm.disabled = false);
+        let rolesCloseBtn_nested = document.querySelector('.rolesSkillCloseBtn' + roleId)
+        mOutpout.removeChild(rolesCloseBtn_nested)
+      })
+    })
+}
+
+const getAllContent = () => {
+  fetch('http://localhost:9000/all-content')
+    .then((res) => res.json())
+    .then((data) => {
+      console.log(data)
+    })
+}
+
