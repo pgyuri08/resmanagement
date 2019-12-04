@@ -224,7 +224,15 @@ const deleteFields = () => {
 
 const addElement = (id, questionId) => {
   let resourceContainer = document.getElementById('resources-' + id)
+  restOfTheElements(id, questionId, resourceContainer)
+}
 
+const addQuestion = (id, questionId) => {
+  let resourceContainer = document.getElementById('rolesQuerySources-' + id)
+  restOfTheElements(id, questionId, resourceContainer)
+}
+
+const restOfTheElements = (id, questionId, resourceContainer) => {
   let newInput = document.createElement('input')
   newInput.setAttribute("id",`question-${id}-${questionId}`)
   newInput.classList.add('question_input')
@@ -243,7 +251,6 @@ const addElement = (id, questionId) => {
 
   resourceContainer.appendChild(newInput)
   resourceContainer.appendChild(relatedCheckbox)
-
 }
 
 const fetchRoles = () => {
@@ -252,14 +259,26 @@ const fetchRoles = () => {
   .then((data) => {
     let roles = '';
     data.forEach(function (role) {
-      roles += `
-                <ul id="roles-${role._id}">
-                  <li><b>Description: ${role.description}</b></li>
-                  <li>Name: ${role.name}</li>
-                  <li>Type: ${role.type}</li>
-                  <button class="rolesSkillBtn" name="rolesSkill" onclick="fetchRolesSkills(${role._id})">Skills</button>
-                </ul>  
-          `
+      if(role.queries !== undefined){
+        roles += `
+        <ul id="roles-${role._id}">
+          <li><b>Description: ${role.description}</b></li>
+          <li>Name: ${role.name}</li>
+          <li>Type: ${role.type}</li>
+          <button class="rolesSkillBtn-${role._id}" name="rolesSkill" onclick="fetchRolesSkills(${role._id})">Skills</button>
+          <button class="rolesQueryBtn-${role._id}" name="rolesQuery" onclick="fetchRolesQueries(${role._id})">Query</button>
+        </ul>  
+  `
+      } else {
+        roles += `
+        <ul id="roles-${role._id}">
+          <li><b>Description: ${role.description}</b></li>
+          <li>Name: ${role.name}</li>
+          <li>Type: ${role.type}</li>
+          <button class="rolesSkillBtn-${role._id}" name="rolesSkill" onclick="fetchRolesSkills(${role._id})">Skills</button>
+        </ul>  
+  `
+      }
     })
 
     let mainOutput = document.getElementById('output')
@@ -318,19 +337,112 @@ const fetchRolesSkills = (roleId) => {
       roleList.innerHTML = rolesSkill
       mainOutput.appendChild(roleList)
 
+      mainOutput.querySelectorAll('.rolesQueryBtn-' + roleId).forEach(elm => elm.disabled = true)
+
       let rolesSkillCloseBtn = document.createElement('button')
       rolesSkillCloseBtn.classList.add('rolesSkillCloseBtn' + roleId)
       rolesSkillCloseBtn.innerHTML = "close"
 
       mainOutput.appendChild(rolesSkillCloseBtn)
-      mainOutput.querySelectorAll('.rolesSkillBtn').forEach(elm => elm.disabled = true)
+      mainOutput.querySelectorAll('.rolesSkillBtn-' + roleId).forEach(elm => elm.disabled = true)
       rolesSkillCloseBtn.addEventListener("click", function () {
         let mOutpout = document.getElementById('roles-' + roleId)
         let roles_skill_nested = document.querySelector('.role-skill-list-' + roleId)
         mOutpout.removeChild(roles_skill_nested)
-        mOutpout.querySelectorAll('.rolesSkillBtn').forEach(elm => elm.disabled = false);
+        mOutpout.querySelectorAll('.rolesSkillBtn-' + roleId).forEach(elm => elm.disabled = false);
+        mOutpout.querySelectorAll('.rolesQueryBtn-' + roleId).forEach(elm => elm.disabled = false)
         let rolesCloseBtn_nested = document.querySelector('.rolesSkillCloseBtn' + roleId)
         mOutpout.removeChild(rolesCloseBtn_nested)
+      })
+    })
+}
+
+const fetchRolesQueries = (roleId) => {
+  fetch('http://localhost:9000/roles/queries')
+    .then((res) => res.json())
+    .then((data) => {
+      let rolesQueries = '';
+      let i = '';
+      for (i = 0; i < data.length; i++) {
+        if (data[i]._id === roleId) {
+          let leng = data[i].queries.length
+          for (a = 0; a < leng; a++) {
+
+            queryId = data[i].queries[a]._id
+            queryQuery = data[i].queries[a].query
+            queryType = data[i].queries[a].type
+
+            rolesQueries += `
+              <ul id="rolesQueries-${queryId}">
+                <li><b>Description: ${queryQuery}</b></li>
+                <li>Type: ${queryType}</li>
+                <button class="rolesQueryResourcesBtn-${queryId}" name="rolesQueryResourcesBtn" onclick="fetchRolesQueryResources(${roleId},${queryId})">Resources</button>
+              </ul>  
+        `
+          }
+        }
+      }
+      let mainOutput = document.getElementById('roles-' + roleId)
+      let roleList = document.createElement('ul')
+      roleList.classList.add('role-query-list-' + roleId)
+      roleList.innerHTML = rolesQueries
+      mainOutput.appendChild(roleList)
+    })
+}
+
+const fetchRolesQueryResources = (roleId, queryId) => {
+  fetch('http://localhost:9000/roles/queries/resources')
+    .then((res) => res.json())
+    .then((data) => {
+      let questionId = '';
+      let rolesQuerySources = '';
+      let i = ''; 
+      for (i = 0; i < data.length; i++) { 
+        if (data[i]._id === roleId) { 
+          let leng = data[i].queries.length 
+          for (a = 0; a < leng; a++) { 
+            questionId = data[i].queries[a].resources.length
+            for (b = 0; b < questionId; b++) {
+
+              questionNo = data[i].queries[a].resources[b]._id
+              questionTitle = data[i].queries[a].resources[b].title
+              questions = data[i].queries[a].resources[b].summary
+
+              rolesQuerySources += `
+                <ul id="rolesQuerySources-${questionNo}">
+                <li><b>${questionTitle}</b><button id="addBtn-${questionNo}" style="margin-left:10px" onclick="addQuestion(${questionNo}, ${questionId})">Add</button></li>
+                `
+
+              data[i].queries[a].resources[b].summary.map((value, i) => {
+                rolesQuerySources += `<input id="question-${questionNo}-${i}" class="question_input" type="text" size="100%" value="${value}" onclick="selectCheckBox(${questionNo}, ${i})"/>
+                <input class="checkbox" id="checkbox-${questionNo}-${i}" ref="question-${questionNo}-${i}" type="checkbox">`
+              })
+
+              rolesQuerySources += `</ul>`
+            }
+          }
+        }
+      }
+      let mainOutput = document.getElementById('rolesQueries-' + queryId)
+      let rolesQuerySourcesElm = document.createElement('ul')
+      rolesQuerySourcesElm.classList.add('role-query-source-list' + queryId)
+      rolesQuerySourcesElm.innerHTML = rolesQuerySources
+      mainOutput.appendChild(rolesQuerySourcesElm)
+
+      mainOutput.querySelectorAll('.rolesQueryResourcesBtn-' + queryId).forEach(elm => elm.disabled = true)
+
+      let rolesQuerySourcesCloseBtn = document.createElement('button')
+      rolesQuerySourcesCloseBtn.classList.add('rolesQuerySourcesCloseBtn' + queryId)
+      rolesQuerySourcesCloseBtn.innerHTML = "close"
+
+      mainOutput.appendChild(rolesQuerySourcesCloseBtn)
+      rolesQuerySourcesCloseBtn.addEventListener("click", function () {
+        let mOutpout = document.getElementById('rolesQueries-' + queryId)
+        let roles_queries_sources_nested = document.querySelector('.role-query-source-list' + queryId)
+        mOutpout.removeChild(roles_queries_sources_nested)
+        mOutpout.querySelectorAll('.rolesQueryResourcesBtn-' + queryId).forEach(elm => elm.disabled = false)
+        let rolesQueriesSourceCloseBtn_nested = document.querySelector('.rolesQuerySourcesCloseBtn' + queryId)
+        mOutpout.removeChild(rolesQueriesSourceCloseBtn_nested)
       })
     })
 }

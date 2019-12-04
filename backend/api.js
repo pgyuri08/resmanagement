@@ -136,6 +136,24 @@ router.get('/roles/skills', async (req,res) => {
   }
 });
 
+router.get('/roles/queries', async (req,res) => {
+  try{
+    const posts = await Resource.find({"type":"role"}).populate('queries')
+    res.json(posts)
+  }catch(err){
+    res.json({message:err })
+  }
+});
+
+router.get('/roles/queries/resources', async (req,res) => {
+  try{
+    const posts = await Resource.find({"type":"role"}).populate({ path: 'queries', populate: { path: 'resources' } })
+    res.json(posts)
+  }catch(err){
+    res.json({message:err })
+  }
+});
+
 router.get('/all-content', async (req, res) => {
   try{
     const posts = await Resource.find({"type":"job_description"})
